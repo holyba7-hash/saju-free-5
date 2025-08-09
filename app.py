@@ -1,47 +1,36 @@
-from flask import Flask, render_template, request, send_file
-from pdf_generator import generate_pdf
+from flask import Flask, render_template, request
 import os
+import socket
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/result', methods=['POST'])
+@app.route("/result", methods=["POST"])
 def result():
-    name = request.form['name']
-    birthdate = request.form['birthdate']
-    gender = request.form['gender']
-    topic = request.form['topic']
+    name = request.form.get("name")
+    birthdate = request.form.get("birthdate")
+    gender = request.form.get("gender")
+    topic = request.form.get("topic")
+    analysis = f"<p>{name}님의 사주 분석 결과입니다. ({birthdate}, {gender}) - 주제: {topic}</p>"
+    return render_template("result.html", analysis=analysis)
 
-    analysis = f"""<h3>{name}님의 사주 간단 분석</h3>
-    <p>생년월일: {birthdate}</p>
-    <p>성별: {gender}</p>
-    <p>상담 분야: {topic}</p>
-    <p>※ 심층 분석은 상담 시 진행됩니다.</p>"""
+if __name__ == "__main__":
+    # 로컬 접속 주소
+    local_url = "http://localhost:5000"
 
-    pdf_path = generate_pdf(name, analysis)
-    pdf_path_abs = os.path.abspath(pdf_path)
+    # Replit 접속 주소 추출
+    repl_slug = os.environ.get("REPL_SLUG")
+    repl_owner = os.environ.get("REPL_OWNER")
+    repl_region = os.environ.get("REPL_REGION", "us")
+    if repl_slug and repl_owner:
+        replit_url = f"https://{repl_owner}.{repl_slug}.{repl_region}.repl.co"
+    else:
+        replit_url = "Replit 환경이 아닙니다."
 
-    return render_template('result.html', analysis=analysis, pdf_filename=os.path.basename(pdf_path_abs))
-
-@app.route('/download/<filename>')
-def download(filename):
-    file_path = os.path.abspath(filename)
-    return send_file(file_path, as_attachment=True)
-
-if __name__ == '__main__':
-    host = '0.0.0.0'
-    port = 5000
-
-    # 여기를 본인 Replit 정보로 변경
-    replit_username = "your-replit-username"  # 예: honggildong
-    replit_appname = "your-repl-name"         # 예: saju-consult
-
-    replit_url = f"https://{replit_username}.{replit_appname}.repl.co"
-
-    print(f"\n💡 로컬 접속 주소: http://localhost:{port}")
+    print(f"💡 로컬 접속 주소: {local_url}")
     print(f"💡 Replit 접속 주소: {replit_url}\n")
 
-    app.run(host=host, port=port)
+    app.run(host="0.0.0.0", port=5000)
